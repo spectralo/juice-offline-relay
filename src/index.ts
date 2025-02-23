@@ -1,15 +1,15 @@
-import { Elysia, env } from "elysia";
+import { Elysia } from "elysia";
+import { env } from "./lib/env";
 
-declare module "bun" {
-    interface Env {
-        PORT?: number;
-    }
-}
+console.log(`INFO Environment: ${env.ENVIRONMENT}`)
 
-const app = new Elysia()
-    .get("/", () => "Hello Elysia")
-    .listen(env.PORT || 3000);
+const server = new Elysia()
+    .post("/add_moment", () => {
+        console.log("Adding moment...")
+        return;
+    })
+    .listen(env.PORT);
 
 console.log(
-    `Server is running at ${app.server?.hostname}:${app.server?.port}`
+    `INFO Server is running at ${server.server?.hostname}:${server.server?.port}`
 );
