@@ -1,33 +1,74 @@
+import { base } from "./lib/airtable";
 import { env } from "./lib/env";
-import { STATUS_BAD_REQUEST, statusText } from "./lib/http";
 
 console.log(`INFO Environment: ${env.ENVIRONMENT}`)
 
-const server = Bun.serve({
+Bun.serve({
     routes: {
         "/add_moment": {
-            POST: async (request, server) => {
-                let data: {
-                    token: string;
-                } | undefined = undefined;
+            POST: async req => {
                 try {
-                    let data = await request.json();
-                    console.log(data);
+                    const formdata = await req.formData();
+
+                    // get token
+                    const token = formdata.get('token');
+                    if (!token) {
+                        return Response.json({
+                            success: false,
+                            message: "Missing token",
+                        }, {
+                            status: 400,
+                            statusText: "Bad Request",
+                        })
+                    }
+
+                    // get stretch ID
+                    const stretchId = formdata.get('stretchId');
+                    if (!stretchId) {
+                        return Response.json({
+                            success: false,
+                            message: "Missing stretchId",
+                        }, {
+                            status: 400,
+                            statusText: "Bad Request",
+                        })
+                    }
+
+                    // get user from database
+                    const signupRecords = await base("Signups").select({
+                        filterByFormula: `{token} = '${token}'`,
+                        maxRecords: 1,
+                    }).firstPage();
+
+                    // respond with 404 when user is not found
+                    if (!signupRecords || signupRecords.length === 0) {
+                        return Response.json({
+                            success: false,
+                            message: "User not found",
+                        }, {
+                            status: 404,
+                            statusText: "Not Found",
+                        })
+                    }
+                    
+                    const record = signupRecords[0];
+                    console.log(record.fields);
+    
+                    // respond with success message
+                    return Response.json({
+                        success: true,
+                        message: "Successfully created moment",
+                    });
                 } catch (e) {
                     console.error(e);
                     return Response.json({
                         success: false,
-                        message: "Could not parse request data."
+                        message: "Failed to create moment"
                     }, {
-                        status: STATUS_BAD_REQUEST,
-                        statusText: statusText(STATUS_BAD_REQUEST),
+                        status: 500,
+                        statusText: "Internal Server Error",
                     })
                 }
-
-                return Response.json({
-                    success: true,
-                    message: "Creating moment...",
-                });
             }
         },
     },
