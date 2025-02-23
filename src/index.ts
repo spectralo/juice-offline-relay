@@ -3,7 +3,7 @@ import { env } from "./lib/env";
 
 console.log(`INFO Environment: ${env.ENVIRONMENT}`)
 
-const server = new Elysia()
+const app = new Elysia()
     .post("/add_moment", () => {
         console.log("Adding moment...")
         return;
@@ -11,5 +11,5 @@ const server = new Elysia()
     .listen(env.PORT);
 
 console.log(
-    `INFO Server is running at ${server.server?.hostname}:${server.server?.port}`
+    `INFO Server is running at ${app.server?.hostname}:${app.server?.port}`
 );
