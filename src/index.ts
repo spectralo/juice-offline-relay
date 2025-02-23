@@ -1,10 +1,14 @@
 import { Elysia, env } from "elysia";
 
-const PORT = 3000;
+declare module "bun" {
+    interface Env {
+        PORT?: number;
+    }
+}
 
 const app = new Elysia()
     .get("/", () => "Hello Elysia")
-    .listen(PORT);
+    .listen(env.PORT || 3000);
 
 console.log(
     `Server is running at ${app.server?.hostname}:${app.server?.port}`
