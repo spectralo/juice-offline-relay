@@ -1,15 +1,15 @@
 {
   "name": "juice-offline-relay",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
+  "version": "1.0.50",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts"
   },
-  "devDependencies": {
-    "@types/bun": "latest"
+  "dependencies": {
+    "elysia": "latest"
   },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
 }
