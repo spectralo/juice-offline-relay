@@ -1,5 +1,3 @@
-import { InternalServerError } from "elysia";
-
 declare module "bun" {
     interface Env {
         PORT?: number;
