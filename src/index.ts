@@ -13,18 +13,7 @@ console.log(`INFO Date: ${new Date().toISOString()}`)
 
 Bun.serve({
     routes: {
-        "/start_juice_stretch": {
-            POST: async req => {
-                return Response.json({
-                    success: true,
-                    message: "Successfully started ",
-                }, {
-                    status: 500,
-                    statusText: "Internal Server Error",
-                })
-            }
-        },
-        "/stop_juice_stretch": {
+        "/add_moment": {
             POST: async req => {
                 try {
                     const formdata = await req.formData();
