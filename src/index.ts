@@ -32,6 +32,7 @@ interface JuiceStretchFields extends Airtable.FieldSet {
     startTime: string,
     endTime: string,
     totalPauseTimeSeconds: number,
+    Signups: string[],
     omgMoments: string[],
     Review: ReviewStatus,
     isOffline: boolean,
@@ -64,7 +65,6 @@ Bun.serve({
                             statusText: "Bad Request",
                         });
                     }
-                    console.log(`INFO Got request: ${JSON.stringify(data)}`);
 
                     const {
                         token,
@@ -107,7 +107,8 @@ Bun.serve({
                         method: "PUT",
                     })
 
-                    const omgMoment = await base<OmgMomentFields>('omgMoments').create([
+                    // create omg moment
+                    const omgMoments = await base<OmgMomentFields>('omgMoments').create([
                         {
                             fields: {
                                 description,
@@ -116,14 +117,17 @@ Bun.serve({
                             }
                         }
                     ]);
+                    const omgMoment = omgMoments[0];
 
+                    // create juice stretch
                     await base<JuiceStretchFields>('juiceStretches').create([
                         {
                             fields: {
                                 ID: stretchId,
                                 startTime: startTime.toISOString(),
                                 endTime: stopTime.toISOString(),
-                                omgMoments: [omgMoment[0].id],
+                                Signups: [signupRecord.id],
+                                omgMoments: [omgMoment.id],
                                 totalPauseTimeSeconds: totalPauseTimeSeconds,
                                 isOffline: true,
                             }
