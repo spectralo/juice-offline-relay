@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { base } from "./lib/airtable";
+import { base, getSignupRecord, JuiceStretchFieldSet, OmgMomentFieldSet } from "./lib/airtable";
 import { env } from "./lib/env";
-import Airtable from "airtable";
-import { s3 } from "./lib/s3";
+import { getFileChecksum as getFileChecksumSHA256, parseS3ObjectUrl, s3Client } from "./lib/s3";
+import { ErrorDetails, GetObjectCommand, HeadObjectCommand, HeadObjectCommandOutput, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 console.log(`ENVIRONMENT: ${env.ENVIRONMENT}`)
 
@@ -10,13 +11,7 @@ if (env.ENVIRONMENT === "development") {
     console.log(`PORT: ${env.PORT}`)
 }
 
-// How do we want to handle the api difference here?
-// on the website it's starts and stops via a request to ensure correctness via server validation
-// now however, we have it all client side.
-// So there should be one add_moment endpoint that creates the start and stop time and everything.
-
-const momentSchema = z.object({
-    token: z.string(),
+const addMomentSchema = z.object({
     stretchId: z.string(),
     description: z.string(),
     startTime: z.date({ coerce: true }),
@@ -25,134 +20,172 @@ const momentSchema = z.object({
     videoTitle: z.string(),
 });
 
-type ReviewStatus = "Pending" | "Accepted" | "Rejected";
-
-interface JuiceStretchFields extends Airtable.FieldSet {
-    ID: string,
-    startTime: string,
-    endTime: string,
-    totalPauseTimeSeconds: number,
-    Signups: string[],
-    omgMoments: string[],
-    Review: ReviewStatus,
-    isOffline: boolean,
-    isCancelled: boolean,
-    pauseTimeStart: string,
-}
-
-interface OmgMomentFields extends Airtable.FieldSet {
-    description: string,
-    video: string,
-    juiceStretches: string[],
-    Review: ReviewStatus,
-}
-
 Bun.serve({
     routes: {
-        "/api/offline/add_moment": {
+        "/api/moments": {
             POST: async req => {
-                try {
-                    const json = await req.json();
-
-                    // parse request data from formdata
-                    const { success, data, error } = await momentSchema.safeParseAsync(json)
-                    if (!success) {
-                        return Response.json({
-                            success: false,
-                            message: error.format(),
-                        }, {
-                            status: 400,
-                            statusText: "Bad Request",
-                        });
-                    }
-
-                    const {
-                        token,
-                        description,
-                        startTime,
-                        stopTime,
-                        stretchId,
-                        totalPauseTimeSeconds,
-                        videoTitle,
-                    } = data;
-
-                    // get user from database
-                    const signupRecords = await base("Signups").select({
-                        filterByFormula: `{token} = '${token}'`,
-                        maxRecords: 1,
-                    }).firstPage();
-
-                    // respond with 404 when user is not found
-                    if (!signupRecords || signupRecords.length === 0) {
-                        return Response.json({
-                            success: false,
-                            message: "User not found",
-                        }, {
-                            status: 404,
-                            statusText: "Not Found",
-                        })
-                    }
-
-                    // request is now authorized for this record
-                    const signupRecord = signupRecords[0];
-                    
-                    // create file reference to s3
-                    const s3FilePath = `omg-moments/${Date.now()}-${videoTitle}`;
-                    const file = s3.file(s3FilePath);
-                    const videoUrl = `https://${file.bucket}.s3.amazonaws.com/${s3FilePath}`;
-                    
-                    // initialize file and get presigned url
-                    const presignedUrl = file.presign({
-                        expiresIn: 8 * 60 * 60, // valid for 8 hours
-                        method: "PUT",
-                    })
-
-                    // create omg moment
-                    const omgMoments = await base<OmgMomentFields>('omgMoments').create([
-                        {
-                            fields: {
-                                description,
-                                email: signupRecord.fields.email,
-                                video: videoUrl,
-                            }
-                        }
-                    ]);
-                    const omgMoment = omgMoments[0];
-
-                    // create juice stretch
-                    await base<JuiceStretchFields>('juiceStretches').create([
-                        {
-                            fields: {
-                                ID: stretchId,
-                                startTime: startTime.toISOString(),
-                                endTime: stopTime.toISOString(),
-                                Signups: [signupRecord.id],
-                                omgMoments: [omgMoment.id],
-                                totalPauseTimeSeconds: totalPauseTimeSeconds,
-                                isOffline: true,
-                            }
-                        }
-                    ])
-
-                    // respond with success message
-                    return Response.json({
-                        success: true,
-                        message: "Successfully created moment",
-                        videoUrl: videoUrl,
-                        presignedUrl: presignedUrl,
-                    });
-                } catch (e) {
-                    console.error(e);
+                const token = req.headers.get("token");
+                if (!token) {
                     return Response.json({
                         success: false,
-                        message: "Failed to create moment"
+                        message: "Missing token"
                     }, {
-                        status: 500,
-                        statusText: "Internal Server Error",
-                    })
+                        status: 401,
+                        statusText: "Unauthorized"
+                    });
                 }
+
+                const json = await req.json();
+
+                // parse request data from formdata
+                const { success, data, error } = await addMomentSchema.safeParseAsync(json)
+                if (!success) {
+                    return Response.json({
+                        success: false,
+                        message: error.format(),
+                    }, {
+                        status: 400,
+                        statusText: "Bad Request",
+                    });
+                }
+
+                const {
+                    description,
+                    startTime,
+                    stopTime,
+                    stretchId,
+                    totalPauseTimeSeconds,
+                    videoTitle,
+                } = data;
+
+                // get user from database
+                const signupRecord = await getSignupRecord(token);
+
+                // respond with 404 when user is not found
+                if (!signupRecord) {
+                    return Response.json({
+                        success: false,
+                        message: "User not found",
+                    }, {
+                        status: 404,
+                        statusText: "Not Found",
+                    });
+                }
+
+                // request is now authorized for this record
+                
+                // get presigned url to the file location
+                const s3FilePath = `omg-moments/${Date.now()}-${videoTitle}`;
+                const command = new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: s3FilePath })
+
+                const presignedUrl = await getSignedUrl(s3Client, command, {
+                    expiresIn: 3600 // valid for 1 hour
+                })
+
+                const videoUrl = `https://${env.S3_BUCKET}.s3.amazonaws.com/${s3FilePath}`;
+
+                // create omg moment
+                const omgMoment = await base<OmgMomentFieldSet>('omgMoments').create({
+                    description,
+                    email: signupRecord.fields.email,
+                    video: videoUrl,
+                });
+
+                // create juice stretch
+                await base<JuiceStretchFieldSet>('juiceStretches').create({
+                    ID: stretchId,
+                    startTime: startTime.toISOString(),
+                    endTime: stopTime.toISOString(),
+                    Signups: [signupRecord.id],
+                    omgMoments: [omgMoment.id],
+                    totalPauseTimeSeconds: totalPauseTimeSeconds,
+                    isOffline: true,
+                })
+
+                // respond with success message
+                return Response.json({
+                    success: true,
+                    message: "Successfully created moment",
+                    videoUrl: videoUrl,
+                    presignedUrl: presignedUrl,
+                });
             }
         },
+        "/api/moments/:stretchId/video/hash": {
+            GET: async req => {
+                const token = req.headers.get("token");
+                const { stretchId } = req.params;
+
+                if (!token) {
+                    return Response.json({
+                        success: false,
+                        message: "Missing token"
+                    }, {
+                        status: 401,
+                        statusText: "Unauthorized"
+                    });
+                }
+
+                console.log({ token, stretchId })
+
+                const signupRecord = await getSignupRecord(token);
+                
+                if (!signupRecord) return Response.json({
+                    success: false,
+                    message: "User not found"
+                }, {
+                    status: 404,
+                    statusText: "Not Found"
+                });
+
+                // request now authorized for signup record
+
+                const omgMoments = await base<OmgMomentFieldSet>('omgMoments').select({
+                    filterByFormula: `{juiceStretches} = '${stretchId}'`,
+                    maxRecords: 1,
+                }).firstPage();
+
+                const omgMoment = omgMoments.at(0);
+
+                if (!omgMoment) {
+                    return Response.json({
+                        success: false,
+                        message: `Juice stretch '${stretchId}' not found`
+                    }, {
+                        status: 404,
+                        statusText: "Not Found",
+                    })
+                }
+
+                console.log(omgMoment.fields);
+                const { bucket, key } = parseS3ObjectUrl(omgMoment.fields.video);
+                if (bucket !== env.S3_BUCKET) throw new Error(`No access to s3 bucket "${bucket}"`)
+
+                console.log({ bucket, key })
+                const checksumSHA256 = await getFileChecksumSHA256({
+                    objectKey: key,
+                    bucket: env.S3_BUCKET,
+                    algorithm: "sha256",
+                    encoding: "hex",
+                })
+
+                return Response.json({
+                    success: true,
+                    message: "Got the hash",
+                    hash: checksumSHA256,
+                })
+            }
+        }
+    },
+    error(error) {
+        console.error(error);
+        return Response.json({
+            success: false,
+            message: "Internal Server Error",
+        }, {
+            status: 500,
+            statusText: "Internal Server Error",
+        })
     },
     port: env.PORT,
 })
