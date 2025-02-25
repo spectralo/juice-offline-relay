@@ -11,7 +11,7 @@ const server = Bun.serve({
     routes: {
         [addMomentEndpoint]: { POST: handleAddMoment },
         [uploadVideoEndpoint] : { GET: handleUploadVideo },
-        [getVideoHashEndpoint]: { GET: handleGetVideoHash }
+        [getVideoHashEndpoint]: { GET: handleGetVideoHash },
     },
 
     error(error) {
@@ -22,7 +22,7 @@ const server = Bun.serve({
         }, {
             status: 500,
             statusText: "Internal Server Error",
-        })
+        });
     },
 })
 
