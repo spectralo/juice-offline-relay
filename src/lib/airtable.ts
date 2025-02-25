@@ -30,7 +30,7 @@ export interface OmgMomentFieldSet extends Airtable.FieldSet {
     description: string;
     video: string;
     juiceStretches: string[];
-    Review: ReviewStatus;
+    Review: ReviewStatus[];
 }
 
 export type Achievement = "account_created" | "pr_submitted" | "pr_merged" | "poc_submitted" | "poc_accepted";

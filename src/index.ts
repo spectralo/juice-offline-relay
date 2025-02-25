@@ -158,6 +158,14 @@ Bun.serve({
                     });
                 }
 
+                if (omgMoment.fields.Review[0] !== "Pending") {
+                    return Response.json({
+                        success: false,
+                        message: "Omg moment has already been reviewed and cannot be overwritten",
+                        reviewStatus: omgMoment.fields.Review[0],
+                    }, { status: 409, statusText: "Conflict" })
+                }
+
                 const { bucket, key } = parseS3ObjectUrl(omgMoment.fields.video);
                 if (bucket !== env.S3_BUCKET) throw new Error(`No access to s3 bucket ${bucket}`);
 
