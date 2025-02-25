@@ -3,7 +3,7 @@ import { addMomentEndpoint, handleAddMoment } from "./handleAddMoment";
 import { handleUploadVideo, uploadVideoEndpoint } from "./handleUploadVideo";
 import { getVideoHashEndpoint, handleGetVideoHash } from "./handleGetVideoHash";
 
-console.log(`ENVIRONMENT: ${env.ENVIRONMENT}`);
+console.log(`Environment: "${env.ENVIRONMENT}"`);
 
 const server = Bun.serve({
     port: env.PORT,
