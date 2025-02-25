@@ -33,16 +33,43 @@ export interface OmgMomentFieldSet extends Airtable.FieldSet {
     Review: ReviewStatus;
 }
 
-export interface SignupFieldSet extends Airtable.FieldSet { }
+export type Achievement = "account_created" | "pr_submitted" | "pr_merged" | "poc_submitted" | "poc_accepted";
+
+export interface SignupFieldSet extends Airtable.FieldSet {
+    email: string,
+    token: string,
+    achievements: Achievement[],
+    game_pr: string,
+    created_at: string,
+    juiceStretches: string[],
+    jungleStretches: string[],
+    inChannel: boolean,
+    Slack: string[],
+}
 
 export async function getSignupRecord(token: string): Promise<Airtable.Record<SignupFieldSet> | undefined> {
-    const signupRecords = await base("Signups").select({
+    const signupRecords = await base<SignupFieldSet>("Signups").select({
         filterByFormula: `{token} = '${escapeSingleQuotes(token)}'`,
         maxRecords: 1,
     }).firstPage();
 
-    if (signupRecords.length === 0) return undefined;
-
-    return signupRecords[0];
+    return signupRecords.at(0);
 }
 
+export async function getJuiceStretchRecord(stretchId: string): Promise<Airtable.Record<JuiceStretchFieldSet> | undefined> {
+    const juiceStretchRecords = await base<JuiceStretchFieldSet>("juiceStretches").select({
+        filterByFormula: `{ID} = '${stretchId}'`,
+        maxRecords: 1,
+    }).firstPage();
+
+    return juiceStretchRecords.at(0);
+}
+
+export async function getOmgMomentRecord(juiceStretch: Airtable.Record<JuiceStretchFieldSet>): Promise<Airtable.Record<OmgMomentFieldSet> | undefined> {
+    const omgMomentRecords = await base<OmgMomentFieldSet>("omgMoments").select({
+        filterByFormula: `{juiceStretches} = '${juiceStretch.fields.ID}'`,
+        maxRecords: 1,
+    }).firstPage();
+
+    return omgMomentRecords.at(0);
+}
