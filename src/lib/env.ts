@@ -10,7 +10,7 @@ declare module "bun" {
     }
 }
 
-export type Environment = "development" | "production"
+export type Environment = "development" | "production";
 
 function parseEnvironmentVariables() {
     // default environment variable values
@@ -33,10 +33,10 @@ function parseEnvironmentVariables() {
     } = Bun.env;
 
     // determine environment
-    const ENVIRONMENT: Environment = (NODE_ENV === "development" || NODE_ENV === "production")
-        ? NODE_ENV as Environment
-        : "production";
-
+    const ENVIRONMENT: Environment =
+        NODE_ENV === "development" || NODE_ENV === "production"
+            ? (NODE_ENV as Environment)
+            : "production";
 
     if (!AIRTABLE_API_KEY) {
         throw new Error(`Missing required environment variable: AIRTABLE_API_KEY`);
@@ -47,19 +47,19 @@ function parseEnvironmentVariables() {
     }
 
     if (!S3_ACCESS_KEY_ID) {
-        throw new Error(`Missing required environment variable: S3_ACCESS_KEY_ID`)
+        throw new Error(`Missing required environment variable: S3_ACCESS_KEY_ID`);
     }
 
     if (!S3_SECRET_ACCESS_KEY) {
-        throw new Error(`Missing required environment variable: S3_SECRET_ACCESS_KEY`)
+        throw new Error(`Missing required environment variable: S3_SECRET_ACCESS_KEY`);
     }
 
     if (!S3_REGION) {
-        throw new Error(`Missing required environment variable: S3_REGION`)
+        throw new Error(`Missing required environment variable: S3_REGION`);
     }
 
     if (!S3_BUCKET) {
-        throw new Error(`Missing required environment variable: S3_BUCKET`)
+        throw new Error(`Missing required environment variable: S3_BUCKET`);
     }
 
     return {

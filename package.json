@@ -1,18 +1,21 @@
 {
-  "name": "juice-offline-relay",
-  "version": "1.0.50",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.750.0",
-    "@aws-sdk/s3-request-presigner": "^3.750.0",
-    "airtable": "^0.12.2",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+    "name": "juice-offline-relay",
+    "version": "1.0.50",
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "bun run --watch src/index.ts",
+        "format": "prettier --write ."
+    },
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.750.0",
+        "@aws-sdk/s3-request-presigner": "^3.750.0",
+        "airtable": "^0.12.2",
+        "zod": "^3.24.2"
+    },
+    "devDependencies": {
+        "bun-types": "latest",
+        "prettier": "^3.5.2"
+    },
+    "module": "src/index.js"
 }
