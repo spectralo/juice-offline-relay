@@ -4,9 +4,8 @@ import { handleUploadVideo, uploadVideoEndpoint } from "./handleUploadVideo";
 import { getVideoHashEndpoint, handleGetVideoHash } from "./handleGetVideoHash";
 
 console.log(`ENVIRONMENT: ${env.ENVIRONMENT}`)
-console.log(`PORT: ${env.PORT}`)
 
-Bun.serve({
+const server = Bun.serve({
     port: env.PORT,
 
     routes: {
@@ -26,3 +25,5 @@ Bun.serve({
         })
     },
 })
+
+console.log(`Server listening on ${server.hostname}:${server.port}`)
