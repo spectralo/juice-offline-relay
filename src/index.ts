@@ -4,10 +4,7 @@ import { handleUploadVideo, uploadVideoEndpoint } from "./handleUploadVideo";
 import { getVideoHashEndpoint, handleGetVideoHash } from "./handleGetVideoHash";
 
 console.log(`ENVIRONMENT: ${env.ENVIRONMENT}`)
-
-if (env.ENVIRONMENT === "development") {
-    console.log(`PORT: ${env.PORT}`)
-}
+console.log(`PORT: ${env.PORT}`)
 
 Bun.serve({
     port: env.PORT,
