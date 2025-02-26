@@ -2,6 +2,7 @@ import { env } from "./lib/env";
 import { addMomentEndpoint, handleAddMoment } from "./handleAddMoment";
 import { handleUploadVideo, uploadVideoEndpoint } from "./handleUploadVideo";
 import { getVideoHashEndpoint, handleGetVideoHash } from "./handleGetVideoHash";
+import { handleHasVideo, hasVideoEndpoint } from "./handleHasVideo";
 
 console.log(`Environment: "${env.ENVIRONMENT}"`);
 
@@ -12,6 +13,7 @@ const server = Bun.serve({
         [addMomentEndpoint]: { POST: handleAddMoment },
         [uploadVideoEndpoint]: { GET: handleUploadVideo },
         [getVideoHashEndpoint]: { GET: handleGetVideoHash },
+        [hasVideoEndpoint]: { GET: handleHasVideo },
         // TODO: endpoint to check if moment has video
     },
 

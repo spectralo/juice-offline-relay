@@ -54,7 +54,7 @@ export const handleUploadVideo = async (req: BunRequest<typeof uploadVideoEndpoi
             { status: 401, statusText: "Unauthorized" },
         );
 
-    const omgMoment = await getOmgMomentRecord(juiceStretch);
+    const omgMoment = await getOmgMomentRecord(stretchId);
 
     if (!omgMoment) {
         return Response.json(

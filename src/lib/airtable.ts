@@ -79,11 +79,11 @@ export async function getJuiceStretchRecord(
 }
 
 export async function getOmgMomentRecord(
-    juiceStretch: Airtable.Record<JuiceStretchFieldSet>,
+    juiceStretchID: string,
 ): Promise<Airtable.Record<OmgMomentFieldSet> | undefined> {
     const omgMomentRecords = await base<OmgMomentFieldSet>("omgMoments")
         .select({
-            filterByFormula: `{juiceStretches} = '${juiceStretch.fields.ID}'`,
+            filterByFormula: `{juiceStretches} = '${juiceStretchID}'`,
             maxRecords: 1,
         })
         .firstPage();
