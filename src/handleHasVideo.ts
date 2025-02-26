@@ -4,7 +4,6 @@ import { parseS3ObjectUrl, s3Client } from "./lib/s3";
 import { env } from "./lib/env";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
 
-
 export const hasVideoEndpoint = "/api/moments/:stretchId/video/exists";
 
 export const handleHasVideo = async (req: BunRequest<typeof hasVideoEndpoint>) => {
@@ -12,28 +11,37 @@ export const handleHasVideo = async (req: BunRequest<typeof hasVideoEndpoint>) =
     const { stretchId } = req.params;
 
     if (!token) {
-        return Response.json({
-            success: false,
-            message: "Missing token",
-        }, { status: 401, statusText: "Unauthorized" });
+        return Response.json(
+            {
+                success: false,
+                message: "Missing token",
+            },
+            { status: 401, statusText: "Unauthorized" },
+        );
     }
 
     const signupRecord = await getSignupRecord(token);
 
     if (!signupRecord) {
-        return Response.json({
-            success: false,
-            message: "Entry for token not found in signup records"
-        }, { status: 401, statusText: "Unauthorized" });
+        return Response.json(
+            {
+                success: false,
+                message: "Entry for token not found in signup records",
+            },
+            { status: 401, statusText: "Unauthorized" },
+        );
     }
 
     const omgMomentRecord = await getOmgMomentRecord(stretchId);
 
     if (!omgMomentRecord) {
-        return Response.json({
-            success: false,
-            message: "Omg moment not found",
-        }, { status: 404, statusText: "Not Found" });
+        return Response.json(
+            {
+                success: false,
+                message: "Omg moment not found",
+            },
+            { status: 404, statusText: "Not Found" },
+        );
     }
 
     const { bucket, key } = parseS3ObjectUrl(omgMomentRecord.fields.video);
@@ -45,8 +53,8 @@ export const handleHasVideo = async (req: BunRequest<typeof hasVideoEndpoint>) =
             Bucket: bucket,
             Key: key,
         });
-        
-        await s3Client.send(command)
+
+        await s3Client.send(command);
 
         // got 200 / object exists
         hasVideo = true;
@@ -59,4 +67,4 @@ export const handleHasVideo = async (req: BunRequest<typeof hasVideoEndpoint>) =
         success: true,
         hasVideo: hasVideo,
     });
-}
+};
