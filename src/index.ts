@@ -14,7 +14,6 @@ const server = Bun.serve({
         [uploadVideoEndpoint]: { GET: handleUploadVideo },
         [getVideoHashEndpoint]: { GET: handleGetVideoHash },
         [hasVideoEndpoint]: { GET: handleHasVideo },
-        // TODO: endpoint to check if moment has video
     },
 
     error(error) {
